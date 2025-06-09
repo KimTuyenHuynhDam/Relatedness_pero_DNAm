@@ -18,26 +18,31 @@ library(tidyr)
 library(tibble)
 
 
-setwd("C:/Users/huynhdam/OneDrive - University of South Carolina/Kiaris lab/peromyscus/relatedness pedigree/new DNAm set")
 
+# Load all necessary dataset
 
-sesame = read_rds("NormalizedData/data_sesame_40k.RDS")
-
-key = sesame$key
-
-beta = sesame$beta %>% dplyr::select (-1) 
+map = read.csv("./data/Peromyscus_maniculatus_bairdii.hu_pman_2.1.100.HorvathMammalMethylChip40.v1.csv") #annotation 
+key = read.xlsx("./data/DNAm mice info -BW dataset.xlsx") # mice information
+beta = read.csv("./data/sesame_data_BW.csv") #normalized beta sesame - DNAm information
 
 # Ensure CGids are unique
 rownames(beta) <- make.unique(rownames(beta))
 
-# Convert `beta` to long format
+# Step 1: Convert `beta` to long format
 beta_long <- as.data.frame(beta) %>%
-  rownames_to_column("CGid") %>%
-  pivot_longer(-CGid, names_to = "SID", values_to = "Beta")
+  rownames_to_column("RowID") %>%         # Retain row names in a temporary column
+  mutate(CGid = X) %>%                    # Assign `X` values to `CGid`
+  dplyr:: select(-X) %>%                          # Remove the original `X` column
+  pivot_longer(-c(RowID, CGid),           # Keep `RowID` and `CGid` as fixed columns
+               names_to = "SID",
+               values_to = "Beta") %>%
+  dplyr:: select(CGid, SID, Beta)                 # Reorder columns for clarity
 
-# Merge with `key` to add metadata
+
+# Step 2: Merge with `key` to add metadata
 beta_with_metadata <- beta_long %>%
   inner_join(key, by = c("SID" = "SID")) %>% distinct()
+
 
 
 
@@ -114,6 +119,7 @@ cv_lasso <- cv.glmnet(as.matrix(ml_data %>%
                       nfolds = 10)
 
 best_lambda_lasso <- cv_lasso$lambda.min
+
 lasso_model <- glmnet(as.matrix(ml_data %>%
                                   dplyr::select(all_of(top_cpgs), Age, Sex)), 
                       ml_data$Relatedness, 
@@ -175,3 +181,5 @@ ggplot(data.frame(Observed = y_test, Predicted = y_pred), aes(x = Observed, y = 
   theme_minimal() +
   annotate("text", x = min(y), y = max(y), label = glue::glue("RMSE: {round(test_rmse, 3)}\nR²: {round(test_r2, 3)}"), hjust = 0, vjust = 1, size = 5, color = "blue")
 
+
+ggsave('./plots/Observed vs Predicted Relatedness (Train-Test Split with Feature Selection).jpeg')

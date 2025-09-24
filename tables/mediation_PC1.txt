@@ -1,0 +1,18 @@
+
+Causal Mediation Analysis 
+
+Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+
+                  Estimate 95% CI Lower 95% CI Upper p-value  
+ACME           -0.00047943  -0.00131956  -0.00008335  0.0216 *
+ADE            -0.00141416  -0.00219529   0.00059769  0.1368  
+Total Effect   -0.00189359  -0.00263201  -0.00034949  0.0220 *
+Prop. Mediated  0.25318699   0.02899569   1.71537246  0.0388 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Sample Size Used: 96 
+
+
+Simulations: 5000 
+

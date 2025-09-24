@@ -1,0 +1,1 @@
+Sex-stratified mediation of relatedness → EAA via PC1/PC2. Points = ACME (indirect), ADE (direct), Total (all from the same mediation run); bars = 95% CI. Labels show estimate [CI], raw p | BH q (by sex) and significance (*** <0.001, ** <0.01, * <0.05).

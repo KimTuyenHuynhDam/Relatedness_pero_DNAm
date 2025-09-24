@@ -1,0 +1,41 @@
+$Sex
+[1] "F"
+
+$PC1
+
+Causal Mediation Analysis 
+
+Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+
+                  Estimate 95% CI Lower 95% CI Upper p-value  
+ACME           -0.00176850  -0.00322978  -0.00049885  0.0104 *
+ADE             0.00078709  -0.00105756   0.00267286  0.4272  
+Total Effect   -0.00098141  -0.00287197   0.00074366  0.2356  
+Prop. Mediated  1.80199065  -9.61437485  14.84761781  0.2260  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Sample Size Used: 47 
+
+
+Simulations: 5000 
+
+
+$PC2
+
+Causal Mediation Analysis 
+
+Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+
+                  Estimate 95% CI Lower 95% CI Upper p-value
+ACME           -0.00062946  -0.00188098   0.00066487  0.2748
+ADE            -0.00035196  -0.00180744   0.00105876  0.6136
+Total Effect   -0.00098141  -0.00287537   0.00077317  0.2608
+Prop. Mediated  0.64137808  -2.93729512   4.74137161  0.2668
+
+Sample Size Used: 47 
+
+
+Simulations: 5000 
+
+

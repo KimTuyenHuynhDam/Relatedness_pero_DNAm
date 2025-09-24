@@ -5,7 +5,7 @@ library(broom)
 library(lubridate)
 library(glue)
 library(ggpubr)
-
+library(entropy)
 library(readxl)
 library(dplyr)
 library(ggplot2)

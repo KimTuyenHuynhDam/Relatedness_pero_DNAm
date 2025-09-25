@@ -235,7 +235,7 @@ compute_entropy_kde <- function(beta_values, n = 512) {
   return(entropy)
 }
 
-# beta_mat: rows = samples, columns = CpGs (from previous step)
+
 dim(beta_mat)  # Should be 96 x ~30,000+
 
 

@@ -3,6 +3,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 library(seqinr)
+library(stringr)
 
 # Load the dataset
 

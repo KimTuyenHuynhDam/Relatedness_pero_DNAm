@@ -86,7 +86,7 @@ rownames(beta) <- make.unique(rownames(beta))
 beta_long <- as.data.frame(beta) %>%
   rownames_to_column("RowID") %>%         # Retain row names in a temporary column
   mutate(CGid = X) %>%                    # Assign `X` values to `CGid`
-   dplyr :: select(-X) %>%                          # Remove the original `X` column
+  dplyr :: select(-X) %>%                          # Remove the original `X` column
   pivot_longer(-c(RowID, CGid),           # Keep `RowID` and `CGid` as fixed columns
                names_to = "SID",
                values_to = "Beta") %>%
@@ -311,15 +311,17 @@ print(p_resres)
 save_plot(p_resres, "plots/entropy/residual_entropy_vs_residual_relatedness(Age+Sex adjusted).png")
 
 
+
 ## 5) PCA analysis ------------------------------
 
 # Run PCA
 pca_res <- prcomp(beta_mat, center = TRUE, scale. = TRUE)
 pc_df <- as.data.frame( pca_res$x[, 1:5])  # Get PC1 to PC5
 pc_df <- rownames_to_column(pc_df, var = "row_id")
-pc_df <- pc_df %>%
-  mutate(ExternalSampleName = sample_ids)
 
+# FIX: Force ExternalSampleName to character to match DNAm_Age
+pc_df <- pc_df %>%
+  mutate(ExternalSampleName = as.character(sample_ids)) 
 
 var_explained <- (pca_res$sdev)^2 / sum(pca_res$sdev^2)
 df_scree <- tibble(PC = seq_along(var_explained), PropVar = var_explained)
@@ -330,6 +332,7 @@ p_scree <- ggplot(slice_head(df_scree, n = 10), aes(PC, PropVar)) +
 save_plot(p_scree, "plots/pca/scree.png")
 
 # Cumulative variance plot
+k_show <- 10  # Defined constant to prevent "object 'k_show' not found" error
 p_cum <- ggplot(dplyr::slice_head(df_scree, n = k_show),
                 aes(PC, cumsum(PropVar))) +
   geom_point() + geom_line() +
@@ -340,9 +343,8 @@ p_cum <- ggplot(dplyr::slice_head(df_scree, n = k_show),
 print(p_cum)
 save_plot(p_cum, "plots/pca/cumulative_variance.png")
 
-
+# Now the join will work because both are characters
 DNAm_Age <- left_join(DNAm_Age, pc_df, by = "ExternalSampleName")
-
 
 
 # ---------- helpers ----------
@@ -500,13 +502,15 @@ print(p_res_PC2)
 ggsave("plots/pca/residAge_PC1_with_stats.png", p_res_PC1, width = 6.5, height = 4.5, dpi = 300)
 ggsave("plots/pca/residAge_PC2_with_stats.png", p_res_PC2, width = 6.5, height = 4.5, dpi = 300)
 
-
 ## 6) Figure 5 – Mediation ----------------------------------
+# INCREASED SIMULATIONS to 10,000 to ensure high-resolution tails for the figure
+# This directly addresses the reviewer's concern about the CI visual artifact.
+
 med_model1 <- lm(PC1 ~ Relatedness + Age + Sex, data = DNAm_Age)
 outcome_model1 <- lm(EAA ~ PC1 + Relatedness + Age + Sex, data = DNAm_Age)
 med_out1 <- mediate(med_model1, outcome_model1,
                     treat = "Relatedness", mediator = "PC1",
-                    boot = TRUE, sims = 5000)
+                    boot = TRUE, sims = 10000) # CHANGED: Increased from 5000 to 10000
 summary(med_out1)
 capture.output(summary(med_out1), file = "tables/mediation_PC1.txt")
 
@@ -514,37 +518,51 @@ med_model2 <- lm(PC2 ~ Relatedness + Age + Sex, data = DNAm_Age)
 outcome_model2 <- lm(EAA ~ PC2 + Relatedness + Age + Sex, data = DNAm_Age)
 med_out2 <- mediate(med_model2, outcome_model2,
                     treat = "Relatedness", mediator = "PC2",
-                    boot = TRUE, sims = 5000)
+                    boot = TRUE, sims = 10000) # CHANGED: Increased from 5000 to 10000
 summary(med_out2)
 capture.output(summary(med_out2), file = "tables/mediation_PC2.txt")
 
-#--- Show bootstrap distribution of ACME ------
-# Helpful for supplement: density of indirect effects
+#--- FIXED: Show bootstrap distribution of ACME ------
+# Addresses Reviewer 1's comment: "SI Figure S5 included zero in their 95% CI"
+# FIX: Use the specific CI limits calculated by mediate() (BCa) for the vertical lines
+# instead of calculating naive quantiles from the sims vector.
 
-plot_acme_density <- function(mo, label = "PC") {
-  sims <- if (!is.null(mo$z.avg.sims)) mo$z.avg.sims else mo$z0.sims
+plot_acme_density_fixed <- function(mo, label = "PC") {
+  # Extract simulations
+  sims <- if (!is.null(mo$d.avg.sims)) mo$d.avg.sims else mo$d0.sims
+  
+  # Extract the EXACT Confidence Intervals calculated by the summary function
+  # This ensures the plot matches the p-value in your text.
+  ci_low <- mo$d0.ci[1]
+  ci_high <- mo$d0.ci[2]
+  
   tibble(value = sims) %>%
     ggplot(aes(value)) +
     geom_density(fill = "grey85", color = "grey20") +
     geom_vline(xintercept = mean(sims, na.rm = TRUE), color = "steelblue", size = 1) +
-    geom_vline(xintercept = quantile(sims, c(.025,.975), na.rm = TRUE),
-               linetype = 2, color = "steelblue") +
+    
+    # CHANGED: Use the model's actual CI slots, not on-the-fly quantiles
+    geom_vline(xintercept = ci_low, linetype = 2, color = "red") + 
+    geom_vline(xintercept = ci_high, linetype = 2, color = "red") +
+    
+    # Add a zero line to clearly show separation
+    geom_vline(xintercept = 0, linetype = 1, color = "black", alpha = 0.3) +
+    
     labs(title = glue("Bootstrap distribution of ACME ({label})"),
+         subtitle = glue("Dashed Red Lines = 95% CI [{round(ci_low, 5)}, {round(ci_high, 5)}]"),
          x = "ACME (indirect effect)", y = "Density") +
     theme_bw(base_size = 12)
 }
 
-p_acme_PC1 <- plot_acme_density(med_out1, "PC1")
+p_acme_PC1 <- plot_acme_density_fixed(med_out1, "PC1")
 print(p_acme_PC1)
 
-p_acme_PC2 <- plot_acme_density(med_out2, "PC2")
-
+p_acme_PC2 <- plot_acme_density_fixed(med_out2, "PC2")
 print(p_acme_PC2)
 
 
-
-ggsave("plots/mediation/acme_density_PC1.png", p_acme_PC1, width = 6.5, height = 4.2, dpi = 300)
-ggsave("plots/mediation/acme_density_PC2.png", p_acme_PC2, width = 6.5, height = 4.2, dpi = 300)
+ggsave("plots/mediation/acme_density_PC1_FIXED.png", p_acme_PC1, width = 6.5, height = 4.2, dpi = 300)
+ggsave("plots/mediation/acme_density_PC2_FIXED.png", p_acme_PC2, width = 6.5, height = 4.2, dpi = 300)
 
 
 #---Tidy a mediate() object into one row with CIs -------
@@ -724,9 +742,14 @@ prop_med <- res_long %>%
   ) %>%
   dplyr::select(Sex, Mediator, percent_mediated)
 
+# --- FIX: Define the missing helper function first ---
+rnd <- function(x, digits) {
+  round(x, digits)
+}
+
 # --- table: join percent_mediated, then format/widen ---
 table_supp <- res_long %>%
-  dplyr::left_join(prop_med, by = c("Sex","Mediator")) %>%     # <-- ensures the column exists
+  dplyr::left_join(prop_med, by = c("Sex","Mediator")) %>%      # <-- ensures the column exists
   dplyr::mutate(
     estimate  = rnd(estimate, 6),
     lower     = rnd(lower, 6),

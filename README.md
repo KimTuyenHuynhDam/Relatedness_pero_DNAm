@@ -12,10 +12,10 @@ Inbreeding and parental relatedness are known to affect offspring fitness, but t
 * Methylation changes are not random but cluster at specific neurodevelopmental loci (e.g., *Zic1/Zic4*, *Gsx2*) on Chromosomes 7 and 10.
 * A specific methylation signature was developed to predict parental relatedness with high accuracy ($R^2 = 0.957$).
 
-**Citation**
+**Citation:**
 If you use the code or data from this repository, please cite our manuscript: 
 Huynh-Dam KT, Jaeger C, Chatzistamou I, Horvath S, Kiaris H. (2025). Parental kinship influences global methylation and epigenetic age estimation in Peromyscus. GENETICS.
 
-**Contact**
+**Contact:**
 *Dr. Kim-Tuyen Huynh-Dam: huynhdam@emai.sc.edu
 *Dr. Hippokratis Kiaris: kiarish@cop.sc.edu

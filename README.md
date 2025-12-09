@@ -17,5 +17,5 @@ If you use the code or data from this repository, please cite our manuscript:
 Huynh-Dam KT, Jaeger C, Chatzistamou I, Horvath S, Kiaris H. (2025). Parental kinship influences global methylation and epigenetic age estimation in Peromyscus. GENETICS.
 
 **Contact:**
-*Dr. Kim-Tuyen Huynh-Dam: huynhdam@emai.sc.edu
+*Dr. Kim-Tuyen Huynh-Dam: huynhdam@email.sc.edu; kimtuyenhuynhdam@gmail.com
 *Dr. Hippokratis Kiaris: kiarish@cop.sc.edu

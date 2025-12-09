@@ -20,8 +20,8 @@ library(readr) # For read_tsv if needed
 nested_anova_data <- read_excel("./DNAm_BW/nested_anova_final_hu_pman_2.1.100_anno.xlsx")
 
 
-# Filter for valid chromosomes (1-22, X) and valid positions
-valid_chromosomes <- c(as.character(1:22), "X")
+# Filter for valid chromosomes (1-23, X) and valid positions
+valid_chromosomes <- c(as.character(1:23), "X")
 
 clean_data <- nested_anova_data %>%
   filter(seqnames %in% valid_chromosomes) %>%

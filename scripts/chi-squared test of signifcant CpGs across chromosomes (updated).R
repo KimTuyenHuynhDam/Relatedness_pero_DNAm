@@ -6,7 +6,7 @@ library(ggrepel)
 
 # Load the data
 data <- read.xlsx("./DNAm_BW/nested_anova_final_hu_pman_2.1.100_anno.xlsx", sheet = "Sheet 1") %>%
-  filter(seqnames %in% c(as.character(1:22), "X"))
+  filter(seqnames %in% c(as.character(1:23), "X"))
 
 # Calculate the overall ratio of significant CpGs (FDR < 0.1)
 total_CpGs <- nrow(data)  
@@ -49,7 +49,14 @@ write.xlsx(chi_squared_results, "./plots/chi_squared-BW_dataset/chi_squared.xlsx
 
 # Prepare data for visualization
 visual_data <- chi_squared_results %>%
-  mutate(seqnames = factor(seqnames, levels = c(as.character(1:22), "X")))
+  mutate(
+    seqnames = factor(seqnames, levels = c(as.character(1:23), "X")),
+    # Create the -log10 p-value for sizing
+    neg_log10_p = -log10(p_value),
+    # Create the boolean for shape mapping (matches the Triangle/Circle legend)
+    is_significant_plot = p_value < 0.05
+  )
+
 
 # Define a theme with increased font size
 custom_theme <- theme_minimal() +
@@ -59,8 +66,9 @@ custom_theme <- theme_minimal() +
     axis.title.x = element_text(size = 16, face = "bold"),
     axis.title.y = element_text(size = 16, face = "bold"),
     plot.title = element_text(size = 18, face = "bold"),
-    legend.text = element_text(size = 14),
-    legend.title = element_text(size = 16, face = "bold")
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14, face = "bold"),
+    panel.grid.minor = element_blank() # Cleaner look
   )
 
 # Bar Plot
@@ -79,22 +87,46 @@ bar_plot <- ggplot(visual_data, aes(x = seqnames, fill = direction)) +
 ggsave("./plots/chi_squared-BW_dataset/observed_vs_expected_barplot.png", bar_plot, width = 12, height = 6)
 print(bar_plot)
 
-# Scatter Plot
 scatter_plot <- ggplot(visual_data, aes(x = expected_significant_CpGs, y = significant_CpGs)) +
-  geom_point(aes(color = direction, size = -log10(p_value)), alpha = 0.8) +
+  # Reference line (dashed gray)
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray") +
-  geom_text_repel(aes(label = seqnames), size = 5) +
+  
+  # The Points: Mapping Color, Size, AND Shape
+  geom_point(aes(color = direction, 
+                 size = neg_log10_p, 
+                 shape = is_significant_plot), 
+             alpha = 0.8) +
+  
+  # Labels for chromosomes
+  geom_text_repel(aes(label = seqnames), size = 5, box.padding = 0.5, max.overlaps = Inf) +
+  
+  # Manual scales to match your image
+  scale_color_manual(values = c("Higher" = "red", "Lower" = "blue")) +
+  # 16 is a solid circle, 17 is a solid triangle
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17),
+                     labels = c("FALSE", "TRUE")) + 
+  scale_size_continuous(range = c(3, 10)) + # Adjust range to ensure bubbles are visible
+  
+  # Labeling the axes and legends
   labs(
     title = "Scatter Plot: Observed vs. Expected Significant CpGs",
     x = "Expected Significant CpGs",
     y = "Observed Significant CpGs",
     color = "Deviation Direction",
-    size = "Significance (-log10 p-value)"
+    size = "-Log10 p-value",
+    shape = "Significant (p < 0.05)"
   ) +
-  scale_color_manual(values = c("Higher" = "red", "Lower" = "blue")) +
+  
+  # Override guide order to match your image layout
+  guides(
+    shape = guide_legend(order = 1),
+    color = guide_legend(order = 2),
+    size = guide_legend(order = 3)
+  ) +
   custom_theme
 
-ggsave("./plots/chi_squared-BW_dataset/scatter_plot.png", scatter_plot, width = 12, height = 6)
+# Save and Print
+ggsave("./plots/chi_squared-BW_dataset/scatter_plot.png", scatter_plot, width = 12, height = 8)
 print(scatter_plot)
 
 # Percentage Plot
@@ -116,7 +148,8 @@ print(percentage_plot)
 log_p_plot <- ggplot(visual_data, aes(x = seqnames, y = -log10(p_value))) +
   geom_point(aes(color = direction, size = ratio), alpha = 0.8) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
-  geom_text_repel(aes(label = seqnames), size = 5) +
+  geom_text_repel(aes(label = seqnames), size = 5, box.padding = 0.5, 
+                  max.overlaps = Inf) +
   labs(
     title = "-log10(P-value) of Chromosome Deviations",
     x = "Chromosome",

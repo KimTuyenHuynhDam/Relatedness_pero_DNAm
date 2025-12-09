@@ -15,7 +15,7 @@ manhattan_data <- data %>%
   mutate(
     logFDR = -log10(FDR),                                 # Transform FDR to -log10(FDR)
     color = ifelse(estimate > 0, "red", "blue"),        # Assign color based on estimate
-    seqnames = factor(seqnames, levels = c(as.character(1:22), "X")), # Explicit chromosome order
+    seqnames = factor(seqnames, levels = c(as.character(1:23), "X")), # Explicit chromosome order
     jittered_position = as.numeric(seqnames) + runif(n(), -0.25, 0.25) # Jitter x-axis positions
   ) %>%
   distinct(CGid, .keep_all = TRUE)                        # Keep unique values
@@ -52,8 +52,8 @@ manhattan_plot <- ggplot(manhattan_data_clean, aes(x = jittered_position, y = lo
     y = "-log10(FDR)",
     caption = "Red: Positive correlation | Blue: Negative correlation"
   ) +
-  scale_x_continuous(breaks = 1:23, labels = c(1:22, "X")) +
-  scale_y_continuous(limits = c(0, 5)) +
+  scale_x_continuous(breaks = 1:24, labels = c(1:23, "X")) +
+  scale_y_continuous(limits = c(0, 4.5)) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1)

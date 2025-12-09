@@ -19,17 +19,17 @@ chromosome_sizes_df <- read_tsv("./data/sequence_report.tsv")
 
 # Filter chromosome sizes and prepare for plotting
 chromosome_sizes_df <- chromosome_sizes_df %>%
-  filter(`Chromosome name` %in% c(as.character(1:22), "X")) %>%
+  filter(`Chromosome name` %in% c(as.character(1:23), "X")) %>%
   dplyr::select(`Chromosome name`, `Seq length`) %>%
   rename(seqnames = `Chromosome name`, Size = `Seq length`) %>%
-  mutate(seqnames = factor(seqnames, levels = c(as.character(1:22), "X")))
+  mutate(seqnames = factor(seqnames, levels = c(as.character(1:23), "X")))
 
 # Merge chromosome sizes with nested_anova_filtered
 combined_data <- nested_anova_filtered %>%
   left_join(chromosome_sizes_df, by = "seqnames")
 
-# Ensure chromosome order: 1 to 22, X
-chromosome_levels <- c(as.character(1:22), "X")
+# Ensure chromosome order: 1 to 23, X
+chromosome_levels <- c(as.character(1:23), "X")
 
 # Filter combined_data to keep only valid chromosomes
 combined_data <- combined_data %>%
@@ -70,7 +70,8 @@ ggplot() +
     panel.grid = element_blank(), # Remove gridlines
     axis.text.y = element_text(size = 14),
     axis.title.y = element_text(size = 14),
-    plot.title = element_text(hjust = 0.5, face = "bold")
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.margin = margin(t = 10, r = 10, b = 30, l = 10, unit = "pt")
   )
 
 # Save the plot with increased vertical size

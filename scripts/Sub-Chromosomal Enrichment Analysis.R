@@ -1,6 +1,5 @@
 # ==============================================================================
 # Sub-Chromosomal Enrichment Analysis (Sliding Window)
-# Addressing Reviewer 3: "Testing for enrichment... at sub-chromosome scale"
 # ==============================================================================
 
 # Load necessary libraries

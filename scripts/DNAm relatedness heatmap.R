@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
 # ---------------------------- CONFIG -----------------------------------------
 IND_PATH        <- "./data/Peromyscus.xlsx"
 MATING_PATH     <- "./data/Mating Records.xlsx"
-DNAM_PATH       <- "./data/DNAm_Age.xlsx"
+DNAM_PATH       <- "./data/DNAm mice with EAA.xlsx"
 TARGET_SPECIES  <- c("BW")
 
 GENERATION_DEPTH <- 6
@@ -164,7 +164,7 @@ compute_parent_relatedness <- function(dam_id, sire_id, IND, DAMSIRE, ped_data, 
 IND_raw <- read.xlsx(IND_PATH, detectDates = TRUE) %>% clean_column_names()
 MC_raw  <- read.xlsx(MATING_PATH) %>% clean_column_names()
 DNAm    <- read.xlsx(DNAM_PATH) %>% clean_column_names() %>%
-  dplyr::select(Species, ExternalSampleName, Age, Sex)
+  dplyr::select(Species, ExternalSampleName, Age, Sex, EAA)
 
 # -------------------------- COLUMN PICKERS -----------------------------------
 IND_cols <- list(
@@ -184,6 +184,9 @@ MC_cols <- list(
 )
 
 # -------------------------- MAIN PIPELINE ------------------------------------
+
+
+for (GENERATION_DEPTH in c(1:7)){
 for (species in TARGET_SPECIES) {
   sp <- toupper(species)
   
@@ -295,6 +298,92 @@ for (species in TARGET_SPECIES) {
   }
   
   out_df <- bind_rows(res) %>% arrange(ExternalSampleName)
+  
+  
+  
+  # ----------------- HEATMAP BY EAA (w/ ANNOTATION) ------------------
+  message(glue("[{species}] Generating heatmap by EAA..."))
+  
+  # 1. Get ordering data
+  ordering_data_crr <- out_df %>%
+    filter(SampleID %in% target_ids_present) %>%
+    distinct(SampleID, .keep_all = TRUE) %>% 
+    arrange(EAA)
+  
+  # 2. Get ordered IDs (for subsetting) and Names (for labels)
+  ordered_ids_crr   <- as.character(ordering_data_crr$SampleID)
+  ordered_names_crr <- ordering_data_crr$ExternalSampleName
+  
+  # 3. Re-order the matrix *by SampleID*
+  matrix_ordered_crr <- relatedness_matrix[ordered_ids_crr, ordered_ids_crr]
+  
+  # 4. Apply the ExternalSampleName labels *after* ordering
+  rownames(matrix_ordered_crr) <- ordered_names_crr
+  colnames(matrix_ordered_crr) <- ordered_names_crr
+  
+  # 5. Melt for ggplot2
+  matrix_melted_crr <- as.data.frame(matrix_ordered_crr) %>%
+    tibble::rownames_to_column("ID1") %>%
+    tidyr::pivot_longer(-ID1, names_to = "ID2", values_to = "Relatedness") %>%
+    mutate(
+      ID1 = factor(ID1, levels = ordered_names_crr),
+      ID2 = factor(ID2, levels = ordered_names_crr)
+    )
+  
+  # 6. Create MAIN heatmap plot
+  g_heatmap_crr <- ggplot(matrix_melted_crr, aes(x = ID1, y = ID2, fill = Relatedness)) +
+    geom_tile(color = "white", linewidth = 0.1) +
+    scale_fill_viridis_c(name = "Relatedness (%)", option = "C") +
+    theme_minimal(base_size = 8) +
+    labs(
+      title = glue("{species} - All-Pairs Sample Relatedness"),
+      x = NULL, # X-axis label will be on the annotation plot
+      y = "Sample"
+    ) +
+    theme(
+      axis.text.x = element_blank(), # X-axis text removed
+      axis.ticks.x = element_blank(), # X-axis ticks removed
+      axis.ticks.y = element_blank(),
+      panel.grid = element_blank(),
+      plot.margin = margin(t = 5.5, r = 5.5, b = 0, l = 5.5) # Remove bottom margin
+    )
+  
+  # 7. Create ANNOTATION plot
+  plot_data_annot_crr <- ordering_data_crr %>%
+    mutate(ExternalSampleName = factor(ExternalSampleName, levels = ordered_names_crr))
+  
+  g_annot_crr <- ggplot(plot_data_annot_crr, aes(x = ExternalSampleName, y = 1, fill = EAA)) +
+    geom_tile(color = "grey50", linewidth = 0.1) +
+    # Use a different, nice color scale for the annotation
+    scale_fill_distiller(palette = "RdYlBu", name = "EAA") +
+    scale_x_discrete(expand = c(0, 0)) + # Remove gaps
+    scale_y_continuous(expand = c(0, 0)) + # Remove gaps
+    theme_minimal(base_size = 8) +
+    labs(
+      x = "Sample", 
+      y = NULL,
+      subtitle = glue("Ordered by EAA (n={length(ordered_names_crr)}, depth={GENERATION_DEPTH} gen)")
+    ) +
+    theme(
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      axis.text.y = element_blank(),
+      axis.title.y = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank(),
+      legend.position = "right",
+      plot.margin = margin(t = 0, r = 5.5, b = 5.5, l = 5.5) # Remove top margin
+    )
+  
+  # 8. STITCH plots together
+  g_combined_crr <- g_heatmap_crr / g_annot_crr + 
+    plot_layout(heights = c(20, 1)) # Heatmap is 20x taller than bar
+  
+  # 9. Save combined plot
+  heatmap_path_crr <- file.path(OUT_DIR, glue("{species} - DNAm relatedness heatmap by EAA (gen {GENERATION_DEPTH}).png"))
+  # Adjust height to make room for the annotation bar
+  ggsave(heatmap_path_crr, g_combined_crr, width = 10, height = 9, units = "in", dpi = 300)
+  message(glue("[{species}] wrote -> {heatmap_path_crr}"))
+  
   
   # ------------------- ALL-PAIRS RELATEDNESS MATRIX --------------------
   message(glue("[{species}] Calculating all-pairs relatedness matrix..."))
@@ -527,3 +616,4 @@ for (species in TARGET_SPECIES) {
   message(glue("[{species}] wrote -> {out_path}"))
   
 } # End of the main "for (species ...)" loop
+}
